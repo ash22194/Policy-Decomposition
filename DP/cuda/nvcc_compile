@@ -1,0 +1,23 @@
+#!/bin/bash
+
+if [[ $# == 0 ]]
+then
+   export arch="compute_75"
+   export code="sm_75"
+elif [[ $# == 1 ]]
+then
+   export arch=$1
+   export code="sm_75"
+elif [[ $# == 2 ]]
+then
+   export arch=$1
+   export code=$2
+else
+   echo "Only expects atmost two arguments <arch> and <code>"
+   return 0
+fi
+
+for i in {1..8}
+do
+   nvcc -ptx -arch=$arch -code=$code calc_average$i.cu
+done
