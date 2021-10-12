@@ -32,7 +32,7 @@ function [policy, info] = get_dp_solution(sys, Op, sub_policies)
         save_every = Op.save_every; 
     else 
         save_every = max_iter / 10; 
-    end;
+    end
     reuse_policy   = isfield(Op, 'reuse_policy') && (Op.reuse_policy) && (isfile(save_file));
     
 %% Initialize 
@@ -57,10 +57,10 @@ function [policy, info] = get_dp_solution(sys, Op, sub_policies)
     else
         for uui = 1:1:length(U_DIMS_FREE)
             uu = U_DIMS_FREE(uui);
-            u{uu} = lims(uu, 1) + (lims(uu, 2) - lims(uu, 1)) * rand(num_points(X_DIMS_FREE));
+            u{uu} = lims(uu, 1) + (lims(uu, 2) - lims(uu, 1)) * rand([num_points(X_DIMS_FREE), 1]);
         end
         [x{X_DIMS_FREE}] = ndgrid(grid_indices{:});
-        G_ = zeros(num_points(X_DIMS_FREE));
+        G_ = zeros([num_points(X_DIMS_FREE), 1]);
     
         info.iter = 0;
         info.time_total = 0;

@@ -167,9 +167,6 @@ for dd=1:1:size(u_x,1)
     sys.decomposition_id = dd;
     if (use_gpu)
         [policies{dd,1}, value{dd,1}, info{dd,1}] = dp_decomposition_gpu(sys, Op, p, s);
-        policies{dd,1} = cellfun(@(x) gather(x), policies{dd,1}, 'UniformOutput', false);
-        value{dd,1} = gather(value{dd,1});
-        info{dd,1}.state_grid = cellfun(@(x) gather(x), info{dd,1}.state_grid, 'UniformOutput', false);
     else
         [policies{dd,1}, value{dd,1}, info{dd,1}] = dp_decomposition(sys, Op, p, s);
     end

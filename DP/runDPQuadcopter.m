@@ -122,14 +122,11 @@ info = cell(size(u_x,1), 1);
 for dd=1:1:size(u_x, 1)
     p = reshape(u_x(dd, 1:(2*sys.U_DIMS)), sys.U_DIMS, 2);
     s = reshape(u_x(dd, (1+2*sys.U_DIMS):end), sys.U_DIMS, sys.X_DIMS);
+
     fprintf('Decomposition %d/%d\n', dd, size(u_x,1));
-    
     sys.decomposition_id = dd;
     if (use_gpu)
         [policies{dd,1}, value{dd,1}, info{dd,1}] = dp_decomposition_gpu(sys, Op, p, s);
-        policies{dd,1} = cellfun(@(x) gather(x), policies{dd,1}, 'UniformOutput', false);
-        value{dd,1} = gather(value{dd,1});
-        info{dd,1}.state_grid = cellfun(@(x) gather(x), info{dd,1}.state_grid, 'UniformOutput', false);
     else
         [policies{dd,1}, value{dd,1}, info{dd,1}] = dp_decomposition(sys, Op, p, s);
     end

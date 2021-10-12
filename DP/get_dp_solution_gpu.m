@@ -57,10 +57,10 @@ function [policy, info] = get_dp_solution_gpu(sys, Op, sub_policies)
     else
         for uui = 1:1:length(U_DIMS_FREE)
             uu = U_DIMS_FREE(uui);
-            u{uu} = lims(uu, 1) + (lims(uu, 2) - lims(uu, 1)) * rand(num_points(X_DIMS_FREE), 'gpuArray');
+            u{uu} = lims(uu, 1) + (lims(uu, 2) - lims(uu, 1)) * rand([num_points(X_DIMS_FREE), 1], 'gpuArray');
         end
         [x{X_DIMS_FREE}] = ndgrid(grid_indices{:});
-        G_ = gpuArray(zeros(num_points(X_DIMS_FREE)));
+        G_ = gpuArray(zeros([num_points(X_DIMS_FREE), 1]));
     
         info.iter = 0;
         info.time_total = 0;
