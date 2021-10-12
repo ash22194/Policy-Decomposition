@@ -1,6 +1,7 @@
 clear;
 close all;
 clc;
+
 try 
     num_gpus = gpuDeviceCount();
     gpu_id = 0;
@@ -112,12 +113,31 @@ elseif (n==4)
     sys.limits = [pi/2, 3*pi/2; repmat([-pi/2, pi/2], n-1, 1); repmat([-1.5, 1.5], n, 1)];
     sys.lims = [-24, 24; -15, 15; -7.5, 7.5; -1, 1]; % action limits
     
-    Op.num_points = [9,9,9,9,7,7,7,7];
-    Op.num_action_samples = [6,4,3,2];
+    Op.num_points = [17,17,17,17,13,13,13,13];
+    Op.num_action_samples = [6,4,3,2]*2;
     
     % Define decompositions to test
-    load('data/manipulator4dof/manipulator4dof_paretofront.mat');
-    u_x = u_xp;
+    u_x = [];
+    % GA : Ti - (theta_i, theta_dot_i)
+    p = [0, 1;0, 2;0, 3;0, 4];
+    s = [eye(4), eye(4)];
+    u_x = [u_x; reshape(p, 1,2*sys.U_DIMS), reshape(s, 1,sys.U_DIMS*sys.X_DIMS)];
+    
+    % MCTS : [T1,T2] - (theta_1,theta_2,theta_dot_1,theta_dot_2), [T3,T4] - (theta_3,theta_4,theta_dot_3,theta_dot_4)
+    p = [0, 1;0, 1;0, 2;0, 2];
+    s = [1,1,0,0,1,1,0,0;
+         1,1,0,0,1,1,0,0;
+         0,0,1,1,0,0,1,1;
+         0,0,1,1,0,0,1,1];
+    u_x = [u_x; reshape(p, 1,2*sys.U_DIMS), reshape(s, 1,sys.U_DIMS*sys.X_DIMS)];
+    
+    % Random : T1 - (theta_1, theta_dot_3), T2 - (theta_4, theta_dot_2), T3 - (theta_2, theta_dot_4), T4 - (theta_3, theta_dot_1)
+    p = [0, 1;0, 2;0, 3;0, 4];
+    s = [1,0,0,0,0,0,1,0;
+         0,0,0,1,0,1,0,0;
+         0,1,0,0,0,0,0,1;
+         0,0,1,0,1,0,0,0];
+    u_x = [u_x; reshape(p, 1,2*sys.U_DIMS), reshape(s, 1,sys.U_DIMS*sys.X_DIMS)];
 end
 sys.g = 9.81; % m/s^2
 sys.dt = 0.001;
@@ -143,7 +163,7 @@ for dd=1:1:size(u_x,1)
     p = reshape(u_x(dd, 1:(2*sys.U_DIMS)), sys.U_DIMS, 2);
     s = reshape(u_x(dd, (1+2*sys.U_DIMS):end), sys.U_DIMS, sys.X_DIMS);
     
-    disp(sprintf('Decomposition %d/%d', dd, size(u_x,1)));
+    fprintf('Decomposition %d/%d\n', dd, size(u_x,1));
     sys.decomposition_id = dd;
     if (use_gpu)
         [policies{dd,1}, value{dd,1}, info{dd,1}] = dp_decomposition_gpu(sys, Op, p, s);
@@ -154,6 +174,8 @@ for dd=1:1:size(u_x,1)
         [policies{dd,1}, value{dd,1}, info{dd,1}] = dp_decomposition(sys, Op, p, s);
     end
 end
+
+%% Joint - (Requires too much memory for 4DOF Manipulator!)
 
 p_joint = [zeros(n,1), ones(n,1)];
 s_joint = ones(sys.U_DIMS, sys.X_DIMS);

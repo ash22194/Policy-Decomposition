@@ -78,63 +78,87 @@ Op.save_dir = 'data';
 Op.reuse_policy = true;
 
 u_x = [];
-% F - COM, T - All
+% [Fr, Fl] - COM, [Tr, Tl] - All
 p = [3,1; 3,1; 0,1; 0,1];
 s = [ones(2,4), zeros(2,2);
      zeros(2,4), ones(2,2)];
 u_x = [u_x; reshape(p, 1,2*sys.U_DIMS), reshape(s, 1,sys.U_DIMS*sys.X_DIMS)];
 
-% T - Torso, F - All
+% [Tr, Tl] - Torso, [Fr, Fl] - All
 p = [0,1; 0,1; 1,1; 1,1];
 s = [ones(2,4), zeros(2,2);
      zeros(2,4), ones(2,2)];
 u_x = [u_x; reshape(p, 1,2*sys.U_DIMS), reshape(s, 1,sys.U_DIMS*sys.X_DIMS)];
 
-% T - All, F - All
+% [Tr, Tl] - All, [Fr, Fl] - All
 p = [0,1; 0,1; 1,1; 1,1];
 s = [zeros(2,6);
      ones(2,6)];
 u_x = [u_x; reshape(p, 1,2*sys.U_DIMS), reshape(s, 1,sys.U_DIMS*sys.X_DIMS)];
 
-% F - All, T - All
+% [Fr, Fl] - All, [Tr, Tl] - All
 p = [3,1; 3,1; 0,1; 0,1];
 s = [ones(2,6);
      zeros(2,6)];
 u_x = [u_x; reshape(p, 1,2*sys.U_DIMS), reshape(s, 1,sys.U_DIMS*sys.X_DIMS)];
 
-% T - Torso, F - COM
+% [Tr, Tl] - Torso, [Fr, Fl] - COM
 p = [0,1; 0,1; 0,2; 0,2];
 s = [ones(2,4), zeros(2,2);
      zeros(2,4), ones(2,2)];
 u_x = [u_x; reshape(p, 1,2*sys.U_DIMS), reshape(s, 1,sys.U_DIMS*sys.X_DIMS)];
 
-% F - Torso, T - All
+% [Fr, Fl] - Torso, [Tr, Tl] - All
 p = [3,1; 3,1; 0,1; 0,1];
 s = [zeros(2,4), ones(2,2);
      ones(2,4), zeros(2,2)];
 u_x = [u_x; reshape(p, 1,2*sys.U_DIMS), reshape(s, 1,sys.U_DIMS*sys.X_DIMS)];
 
-% T - COM, F - All
+% [Tr, Tl] - COM, [Fr, Fl] - All
 p = [0,1; 0,1; 1,1; 1,1];
 s = [zeros(2,4), ones(2,2);
      ones(2,4), zeros(2,2)];
 u_x = [u_x; reshape(p, 1,2*sys.U_DIMS), reshape(s, 1,sys.U_DIMS*sys.X_DIMS)];
 
-% T - COM, F - Torso
+% [Tr, Tl] - COM, [Fr, Fl] - Torso
 p = [0,1; 0,1; 0,2; 0,2];
 s = [zeros(2,4), ones(2,2);
      ones(2,4), zeros(2,2)];
+u_x = [u_x; reshape(p, 1,2*sys.U_DIMS), reshape(s, 1,sys.U_DIMS*sys.X_DIMS)];
+
+% GA :
+p = [0, 1; 0, 2; 0, 3; 1, 1];
+s = [0, 0, 0, 1, 0, 0;
+     0, 1, 1, 0, 0, 0;
+     0, 0, 0, 0, 1, 1;
+     1, 0, 0, 0, 0, 0];
+u_x = [u_x; reshape(p, 1,2*sys.U_DIMS), reshape(s, 1,sys.U_DIMS*sys.X_DIMS)];
+
+% MCTS :
+p = [0, 1; 0, 2; 1, 1; 0, 3];
+s = [0, 0, 0, 1, 0, 0;
+     0, 1, 1, 0, 0, 0;
+     1, 0, 0, 0, 0, 0;
+     0, 0, 0, 0, 1, 1];
+u_x = [u_x; reshape(p, 1,2*sys.U_DIMS), reshape(s, 1,sys.U_DIMS*sys.X_DIMS)];
+
+% Random :
+p = [0, 1; 0, 2; 0, 3; 2, 1];
+s = [1, 0, 0, 1, 0, 0;
+     0, 0, 1, 0, 0, 0;
+     0, 0, 0, 0, 1, 1;
+     0, 1, 0, 0, 0, 0];
 u_x = [u_x; reshape(p, 1,2*sys.U_DIMS), reshape(s, 1,sys.U_DIMS*sys.X_DIMS)];
 
 policies = cell(size(u_x,1), 1);
 value = cell(size(u_x,1), 1);
 info = cell(size(u_x,1), 1);
 
-for dd=8:1:8
+for dd=1:1:size(u_x,1)
     p = reshape(u_x(dd, 1:(2*sys.U_DIMS)), sys.U_DIMS, 2);
     s = reshape(u_x(dd, (1+2*sys.U_DIMS):end), sys.U_DIMS, sys.X_DIMS);
     
-    disp(sprintf('Decomposition %d/%d', dd, size(u_x,1)));
+    fprintf('Decomposition %d/%d\n', dd, size(u_x,1));
     sys.decomposition_id = dd;
     if (use_gpu)
         [policies{dd,1}, value{dd,1}, info{dd,1}] = dp_decomposition_gpu(sys, Op, p, s);
