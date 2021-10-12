@@ -6,7 +6,7 @@ function measure = computeJointMeasure(sys, p, s)
 % s is m x n matrix where sij = 1 if input i is dependent on state j
 
 %% 
-
+err_lqr_lowerbound = -1e-10;
 [c, c_eq] = constraints(p, s);
 if (any(c_eq~=0) || any(c > 0))
     err_lqr = inf;
@@ -112,7 +112,8 @@ else
                     err_lqr = mean(abs(V - sys.V_joint));
                 end
                 
-                assert(err_lqr >= 0, 'LQR error measure cannot be negative');
+                assert(err_lqr >= err_lqr_lowerbound, 'LQR error measure cannot be negative');
+                
                 NS = sys.num_points;
                 NA = sys.num_action_samples;
                 M = sys.max_iter;
@@ -125,14 +126,19 @@ else
                 subpolicy_update_compute = prod(NS) * prod(NA) ...
                                            * (sample_complexity + step_complexity ...
                                               + interp_complexity + action_update_complexity);
-                joint_compute = err_compute + M * (subpolicy_eval_compute + subpolicy_update_compute);
+                joint_compute = M * (subpolicy_eval_compute + subpolicy_update_compute);
                 
                 err_compute = err_compute / joint_compute;
             end
+            err_lqr = abs(err_lqr);
             if (~isfield(sys, 'measure_func'))
                 measure = (1 - exp(-err_lqr)) * err_compute;
             else
                 measure = sys.measure_func(err_lqr, err_compute);
+            end
+            
+            if ((measure == 0) && (err_lqr~=0))
+                measure = err_lqr * err_compute;
             end
             
             if (isfield(sys, 'decompositionlist'))
