@@ -12,6 +12,7 @@ classdef policy_decomposition_leafexpand < handle
         visit_count
         nodelist
         childnodes
+        childnodes_unexpanded
         childnode_maxcount
         childnode_best
         subtree_unexplored
@@ -45,15 +46,7 @@ classdef policy_decomposition_leafexpand < handle
                 sys.A = A;
                 sys.B = B;
                 sys.lambda_ = lambda_;
-                sys.S = sym('S', [sys.X_DIMS, sys.X_DIMS]);
-                sys.S = tril(sys.S,0) + tril(sys.S,-1).';
-                sys.a = sym('a', [sys.X_DIMS, 1]);
-                sys.b = sym('b', [sys.X_DIMS, 1]);
-                err_lqr = sys.x.'*sys.S*sys.x - sys.x.'*S_j*sys.x;
-                for ii=1:1:sys.X_DIMS
-                    err_lqr = int(err_lqr, sys.x(ii), [sys.a(ii), sys.b(ii)]);
-                end
-                sys.err_lqr_func = matlabFunction(err_lqr, 'Vars', {sys.S, sys.a, sys.b});
+                sys.err_lqr_func = @(S,a,b) definite_integral_parabola(S-S_j,a,b);
                 sys.da = prod(sys.state_bounds(:,2) - sys.state_bounds(:,1), 1);
             end
             
@@ -164,6 +157,7 @@ classdef policy_decomposition_leafexpand < handle
             assert(~de.nodelist.isKey(de.decomposition_key), 'Node already exists!!');
             de.compute_measure();
             de.childnodes = [];
+            de.childnodes_unexpanded = [];
             de.childnode_best = 0;
             de.visit_count = 0;
             de.subtree_unexplored = true;
@@ -210,9 +204,8 @@ classdef policy_decomposition_leafexpand < handle
             end
             
             % Find all children that haven't been expanded
-            childnodes_unexpanded = cellfun(@(x) ~isa(x, 'policy_decomposition_leafexpand'), de.childnodes);
-            if (any(childnodes_unexpanded))
-                childnodes_unexplored_fully = de.childnodes(childnodes_unexpanded);
+            if (any(de.childnodes_unexpanded))
+                childnodes_unexplored_fully = de.childnodes(de.childnodes_unexpanded);
                 
                 max_uctchild = 1;
                 if (~determ)
@@ -229,9 +222,10 @@ classdef policy_decomposition_leafexpand < handle
                                                  de);
                 end
                 
-                max_uctchild = find(childnodes_unexpanded, max_uctchild);
+                max_uctchild = find(de.childnodes_unexpanded, max_uctchild);
                 max_uctchild = max_uctchild(end);
                 de.childnodes{max_uctchild} = child;
+                de.childnodes_unexpanded(max_uctchild) = false;
             else
                 % Expanded but not fully explored?
                 childnodes_unexplored_fully = cellfun(@(x) x.subtree_unexplored, de.childnodes);

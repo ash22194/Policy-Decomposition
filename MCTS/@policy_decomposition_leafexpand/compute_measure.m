@@ -5,6 +5,15 @@ function measure = compute_measure(de)
         return;
     end
     
+    [c,ceq] = constraints(de.p, de.s);
+    if (any(c > 0) || any(ceq~=0))
+        de.lqr_measure = 0;
+        de.compute_fraction = 1;
+        de.measure = de.sys.measure_func(0, 1);
+        measure = de.measure;
+        return;
+    end
+    
     sys_ = de.sys;
     action_tree_ = de.action_tree;
     action_tree_(:,5:6) = cell(size(action_tree_,1),2);
@@ -17,6 +26,7 @@ function measure = compute_measure(de)
     end
     
     err_compute = 0;
+    err_lqr_lower_bound = -1e-10;
     while (~isempty(action_tree_))
         % Find leaf nodes
         leaf_node_ids = cellfun(@(x) isempty(x), action_tree_(:,4));
@@ -39,7 +49,7 @@ function measure = compute_measure(de)
             else
                 err_lqr = sys_.err_lqr_func(S, sys_.state_bounds(:,1)-sys_.l_point, sys_.state_bounds(:,2)-sys_.l_point)/sys_.da;
                 
-                assert(err_lqr >= -1e-13, 'LQR error measure cannot be negative');
+                assert(err_lqr >= err_lqr_lower_bound, 'LQR error measure cannot be negative');
                 % Calculate compute fraction
                 NS = sys_.num_points;
                 NA = sys_.num_action_samples;
@@ -57,11 +67,15 @@ function measure = compute_measure(de)
 
                 err_compute = err_compute / joint_compute;
             end
+            err_lqr = abs(err_lqr);
+            measure = sys_.measure_func(err_lqr, err_compute);
+            if ((measure == 0) && (err_lqr~=0))
+                measure = err_lqr * err_compute;
+            end
+            
             de.lqr_measure = err_lqr;
             de.compute_fraction = err_compute;
-            de.measure = sys_.measure_func(err_lqr, err_compute);
-            measure = de.measure;
-            
+            de.measure = measure;
             return;
         end
         
@@ -91,7 +105,6 @@ function measure = compute_measure(de)
                 de.compute_fraction = 1;
                 de.measure = sys_.measure_func(de.lqr_measure, de.compute_fraction);
                 measure = de.measure;
-                
                 return;
             end
             K(leaf_nodes{ii, 1}, logical(leaf_nodes{ii, 2})) = K_;

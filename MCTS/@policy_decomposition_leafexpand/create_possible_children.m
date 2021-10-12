@@ -2,6 +2,7 @@ function all_possible_children = create_possible_children(de)
             
     X_DIMS = de.sys.X_DIMS;
     all_possible_children = cell(de.childnode_maxcount, 1);
+    de.childnodes_unexpanded = true(de.childnode_maxcount, 1);
     children_count = 0;
     for jj=1:1:size(de.action_tree,1)
         inputs = de.action_tree{jj, 1};
@@ -136,6 +137,7 @@ function all_possible_children = create_possible_children(de)
                         action_tree_encoding = fastint2str(encode_binary_adj(action_tree_));
                         if (de.nodelist.isKey(action_tree_encoding))
                             all_possible_children{children_count+1} = de.nodelist(action_tree_encoding);
+                            de.childnodes_unexpanded(children_count+1) = false;
                         else
                             all_possible_children{children_count+1} = action_tree_;
                         end
@@ -157,6 +159,7 @@ function all_possible_children = create_possible_children(de)
                         action_tree_encoding = fastint2str(encode_binary_adj(action_tree_));
                         if (de.nodelist.isKey(action_tree_encoding))
                             all_possible_children{children_count+1} = de.nodelist(action_tree_encoding);
+                            de.childnodes_unexpanded(children_count+1) = false;
                         else
                             all_possible_children{children_count+1} = action_tree_;
                         end
@@ -179,6 +182,7 @@ function all_possible_children = create_possible_children(de)
                         action_tree_encoding = fastint2str(encode_binary_adj(action_tree_));
                         if (de.nodelist.isKey(action_tree_encoding))
                             all_possible_children{children_count+1} = de.nodelist(action_tree_encoding);
+                            de.childnodes_unexpanded(children_count+1) = false;
                         else
                             all_possible_children{children_count+1} = action_tree_;
                         end
